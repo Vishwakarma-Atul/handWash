@@ -5,9 +5,9 @@
 
 .progress-slider label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
   font-weight: bold;
-  color: #333;
+  text-transform: capitalize;
 }
 
 .slider-container {
@@ -20,7 +20,7 @@
   top: 50%;
   transform: translateY(-50%);
   width: 100%;
-  height: 18px;
+  height: 30px;
   background-color: #e0e0e0;
   border-radius: 4px;
 }
@@ -38,5 +38,4 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 14px;
-  color: #333;
 }
