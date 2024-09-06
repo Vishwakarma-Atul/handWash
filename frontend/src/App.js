@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import ProgressSlider from './ProgressSlider';
+import CameraFeed from './CameraFeed';
 
 function App() {
   const [counters, setCounters] = useState({});
@@ -33,7 +34,7 @@ function App() {
     };
 
     ws.onclose = () => {
-      setStatus('Disconnected');
+      setStatus('Completed');
     };
 
     return ws;
@@ -58,17 +59,25 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Classification Status</h1>
+      <h1>Project Hand Wash</h1>
       <p>Status: {status}</p>
       <button onClick={handleReset}>Reset Counters</button>
-      <h2>Class Counters:</h2>
-      {Object.entries(counters).map(([className, count]) => (
-        <ProgressSlider 
-          key={className}
-          name={className}
-          value={Math.min(Math.round((count / 100) * 100), 100)}
-        />
-      ))}
+      <div><br></br><br></br></div>
+      <div className="content-wrapper">
+        <div className="camera-section">
+          <CameraFeed />
+        </div>
+        <div className="sliders-section">
+          <h2>Steps Count</h2>
+          {Object.entries(counters).map(([className, count]) => (
+            <ProgressSlider
+              key={className}
+              name={className}
+              value={Math.min(Math.round((count / 100) * 100), 100)}
+            />
+          ))}
+        </div>
+      </div>
       {showPopup && (
         <div className="popup">
           <div className="popup-content">
