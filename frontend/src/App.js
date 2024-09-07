@@ -9,13 +9,15 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [selectedCamera, setSelectedCamera] = useState('');
 
   const connectWebSocket = () => {
     const ws = new WebSocket(process.env.REACT_APP_WS_URL);
-    
+
     ws.onopen = () => {
       setStatus('Connected');
       setSocket(ws);
+      ws.send(JSON.stringify({ action: 'start', cameraUrl: selectedCamera }));
     };
 
     ws.onmessage = (event) => {
@@ -40,32 +42,34 @@ function App() {
     return ws;
   };
 
-  useEffect(() => {
-    const ws = connectWebSocket();
-    return () => {
-      ws.close();
-    };
-  }, []);
+  const handleStart = () => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      const newSocket = connectWebSocket();
+      setSocket(newSocket);
+    }
+  };
 
   const handleReset = () => {
-    if (socket) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
       socket.close();
     }
-    setShowPopup(false);
     setCounters({});
-    const newSocket = connectWebSocket();
-    setSocket(newSocket);
+    setStatus('Disconnected');
+    setShowPopup(false);
   };
 
   return (
     <div className="App">
       <h1>Project Hand Wash</h1>
       <p>Status: {status}</p>
-      <button onClick={handleReset}>Reset Counters</button>
+      <div className="button-group">
+        <button onClick={handleStart}>Start</button>
+        <button onClick={handleReset}>Reset</button>
+      </div>
       <div><br></br><br></br></div>
       <div className="content-wrapper">
         <div className="camera-section">
-          <CameraFeed />
+          <CameraFeed onCameraSelect={(url) => setSelectedCamera(url)} />
         </div>
         <div className="sliders-section">
           <h2>Steps Count</h2>
@@ -81,7 +85,7 @@ function App() {
       {showPopup && (
         <div className="popup">
           <div className="popup-content">
-            <h2>Test Passed!</h2>
+            <h2>Sanitize Hands!</h2>
             <p>{popupMessage}</p>
             <button onClick={() => setShowPopup(false)}>Close</button>
           </div>

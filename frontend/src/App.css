@@ -12,7 +12,7 @@ body {
 
 h1 {
   text-align: center;
-  color: #b0b7b9; 
+  /* color: #b0b7b9;  */
   font-size: 2.5em;
   margin-bottom: 30px;
 }
@@ -37,7 +37,7 @@ h1 {
 }
 
 button {
-  background-color: #61dafb;
+  /* background-color: #61dafb; */
   color: #1e1e1e;
   border: none;
   padding: 10px 20px;
@@ -48,7 +48,12 @@ button {
 }
 
 button:hover {
-  background-color: #4fa8d5;
+  background-color: #6b6e6f;
+}
+
+.button-group {
+  display: flex;
+  gap: 2em;
 }
 
 .popup {
@@ -70,7 +75,7 @@ button:hover {
   text-align: center;
 }
 
-.popup h2 {
+/* .popup h2 {
   color: #61dafb;
-}
+} */
 
