@@ -1,3 +1,4 @@
 fastapi
 uvicorn[satndard]
 websockets
+ultralytics==8.0.111

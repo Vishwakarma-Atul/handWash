@@ -1,7 +1,10 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
+import cv2
 import random
+
+from .app import inferance
 
 app = FastAPI()
 
@@ -13,16 +16,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Define classes here
-classes = ["Class1", "Class2", "Class3", "Class4", "Class5"]
-MAX_COUNT = 100
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # Define classes here
+    classes = ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"]
+    MAX_COUNT = 100
+
     await websocket.accept()
     class_counters = {cls: 0 for cls in classes}
     try:
+        data = await websocket.receive_json()
+        print("Received from client:", data)  # This will print the received message
         while True:
+            
             # Simulate classification of 10 frames
             for _ in range(10):
                 classified_class = random.choice(classes)
@@ -32,7 +39,7 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json({
                 "status": "complete" if all_complete else "in_progress",
                 "counters": class_counters,
-                "message": "All classes have reached 100. Test passed!" if all_complete else ""
+                "message": "All steps are followed. Passed!" if all_complete else ""
             })
             print(f"Sent to client: {class_counters}")
             
@@ -40,6 +47,38 @@ async def websocket_endpoint(websocket: WebSocket):
                 break
             
             await asyncio.sleep(0.2)
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        await websocket.close()
+
+@app.websocket("/ws_model")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    infr = inferance()
+    MAX_COUNT = 100
+
+    try:
+        data = await websocket.receive_json()
+        camera_url = data.get("cameraUrl", 0)
+        cap = cv2.VideoCapture(camera_url)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret: break
+            result = infr.predict(frame, MAX_COUNT=MAX_COUNT)
+            print("result : ", result, infr.result)
+
+            all_complete = all(count >= MAX_COUNT for count in infr.result.values())
+
+            await websocket.send_json({
+                "status": "complete" if all_complete else "in_progress",
+                "counters": infr.result,
+                "message": "All steps are followed. Passed!" if all_complete else ""
+            })
+            print(f"Sent to client: {infr.result}")
+            if all_complete: break
+            await asyncio.sleep(0.2)
+
     except Exception as e:
         print(f"Error: {e}")
     finally:
