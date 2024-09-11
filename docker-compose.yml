@@ -1,0 +1,27 @@
+version: '0.1'
+
+services:
+  frontend:
+    name: handwash-frontend
+    image: node:14
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm start"
+    depends_on:
+      - backend
+
+  backend:
+    name: handwash-backend
+    image: handwash_backend:latest
+    ports:
+      - "4550:4550"
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 4550 --reload
+
+volumes:
+  backend:
+  frontend:
