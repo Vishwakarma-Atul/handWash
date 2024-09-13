@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
+
 import './App.css';
-import ProgressSlider from './ProgressSlider';
-import CameraFeed from './CameraFeed';
+import ProgressSlider from './components/ProgressSlider';
+import WebcamCapture from './components/WebcamCapture';
+
+const wsUrl = process.env.REACT_APP_BACKEND_URL + '/ws_model';
 
 function App() {
   const [counters, setCounters] = useState({});
@@ -9,15 +12,16 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
-  const [selectedCamera, setSelectedCamera] = useState('');
+  const webcamRef = useRef(null);
 
   const connectWebSocket = () => {
-    const ws = new WebSocket(process.env.REACT_APP_WS_URL);
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       setStatus('Connected');
       setSocket(ws);
-      ws.send(JSON.stringify({ action: 'start', cameraUrl: selectedCamera }));
+      // ws.send(JSON.stringify({ action: 'start' }));
+      webcamRef.current.startSendingFrames(ws);
     };
 
     ws.onmessage = (event) => {
@@ -69,7 +73,7 @@ function App() {
       <div><br></br><br></br></div>
       <div className="content-wrapper">
         <div className="camera-section">
-          <CameraFeed onCameraSelect={(url) => setSelectedCamera(url)} />
+          <WebcamCapture ref={webcamRef} />
         </div>
         <div className="sliders-section">
           <h2>Steps Count</h2>

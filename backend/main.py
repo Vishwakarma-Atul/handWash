@@ -2,7 +2,8 @@ from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import cv2
-import random
+import numpy as np
+import random, base64
 
 from .app import inferance
 
@@ -59,12 +60,15 @@ async def websocket_endpoint(websocket: WebSocket):
     MAX_COUNT = 100
 
     try:
-        data = await websocket.receive_json()
-        camera_url = data.get("cameraUrl", 0)
-        cap = cv2.VideoCapture(camera_url)
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret: break
+        while True:
+            frame_data = await websocket.receive_text()
+            # Remove the data URL prefix
+            _, encoded = frame_data.split(',', 1)
+            # Decode the base64 string
+            nparr = np.frombuffer(base64.b64decode(encoded), np.uint8)
+            # Decode the image
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
             result = infr.predict(frame, MAX_COUNT=MAX_COUNT)
             print("result : ", result, infr.result)
 
@@ -77,7 +81,6 @@ async def websocket_endpoint(websocket: WebSocket):
             })
             print(f"Sent to client: {infr.result}")
             if all_complete: break
-            await asyncio.sleep(0.2)
 
     except Exception as e:
         print(f"Error: {e}")
