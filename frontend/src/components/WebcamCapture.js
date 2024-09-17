@@ -21,7 +21,14 @@ const WebcamCapture = forwardRef((props, ref) => {
           const canvas = document.createElement('canvas');
           canvas.width = frame.width;
           canvas.height = frame.height;
-          canvas.getContext('2d').drawImage(frame, 0, 0);
+          const ctx = canvas.getContext('2d');
+          
+          // Rotate the frame by 180 degrees
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(Math.PI);
+          ctx.translate(-canvas.width / 2, -canvas.height / 2);
+          
+          ctx.drawImage(frame, 0, 0);
           const imageData = canvas.toDataURL('image/jpeg');
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(imageData);
