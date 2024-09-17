@@ -12,6 +12,7 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState('');
+  const [maxCount, setMaxCount] = useState(100);
   const webcamRef = useRef(null);
 
   const connectWebSocket = () => {
@@ -28,6 +29,7 @@ function App() {
       const data = JSON.parse(event.data);
       setCounters(data.counters);
       setStatus(data.status);
+      setMaxCount(data.max_count);
       if (data.status === 'complete' && !showPopup) {
         setShowPopup(true);
         setPopupMessage(data.message);
@@ -81,7 +83,7 @@ function App() {
             <ProgressSlider
               key={className}
               name={className}
-              value={Math.min(Math.round((count / 100) * 100), 100)}
+              value={Math.min(Math.round((count / maxCount) * 100), 100)}
             />
           ))}
         </div>

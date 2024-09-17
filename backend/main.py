@@ -77,7 +77,8 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json({
                 "status": "complete" if all_complete else "in_progress",
                 "counters": infr.result,
-                "message": "All steps are followed. Passed!" if all_complete else ""
+                "message": "All steps are followed. Passed!" if all_complete else "",
+                "max_count": MAX_COUNT
             })
             print(f"Sent to client: {infr.result}")
             if all_complete: break
