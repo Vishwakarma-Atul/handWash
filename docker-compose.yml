@@ -1,8 +1,8 @@
-version: '0.1'
+# version: '3.8'
 
 services:
   frontend:
-    name: handwash-frontend
+    container_name: handwash-frontend
     image: node:14
     working_dir: /app
     ports:
@@ -14,13 +14,13 @@ services:
       - backend
 
   backend:
-    name: handwash-backend
+    container_name: handwash-backend
     image: handwash_backend:latest
     ports:
       - "4550:4550"
     volumes:
-      - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 4550 --reload
+      - ./backend:/app/backend
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 4550 --reload
 
 volumes:
   backend:
