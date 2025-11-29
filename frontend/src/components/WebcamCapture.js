@@ -6,10 +6,39 @@ const WebcamCapture = forwardRef((props, ref) => {
   const [selectedDevice, setSelectedDevice] = useState('');
   const streamInterval = useRef(null);
 
+  const refreshDevices = async (promptForPermission = true) => {
+    try {
+      // If we want labels, prompt the user for camera permission first.
+      if (promptForPermission) {
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // stop the temporary stream so we don't hold the camera
+        tempStream.getTracks().forEach(t => t.stop());
+      }
+    } catch (err) {
+      // user may deny permission — still try to enumerate devices (may be empty or unlabeled)
+      console.warn('Temporary getUserMedia failed:', err);
+    }
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = all.filter(d => d.kind === 'videoinput');
+      setDevices(videoInputs);
+      // auto-select first camera if none selected yet
+      if (videoInputs.length && !selectedDevice) {
+        setSelectedDevice(videoInputs[0].deviceId);
+      }
+    } catch (err) {
+      console.error('Error enumerating devices:', err);
+    }
+  };
+
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices()
-      .then(devices => setDevices(devices.filter(device => device.kind === 'videoinput')))
-      .catch(err => console.error('Error enumerating devices:', err));
+    // initial refresh (prompt for permission to get labels)
+    refreshDevices(true);
+
+    // refresh when devices change (e.g. plug/unplug)
+    const onDeviceChange = () => refreshDevices(false);
+    navigator.mediaDevices.addEventListener('devicechange', onDeviceChange);
+    return () => navigator.mediaDevices.removeEventListener('devicechange', onDeviceChange);
   }, []);
 
   useImperativeHandle(ref, () => ({
@@ -74,6 +103,7 @@ const WebcamCapture = forwardRef((props, ref) => {
           </option>
         ))}
       </select>
+      {/* <button type="button" onClick={() => refreshDevices(true)}>Refresh cameras</button> */}
       <video ref={videoRef} autoPlay playsInline />
     </div>
   );
