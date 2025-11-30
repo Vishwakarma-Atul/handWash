@@ -1,4 +1,9 @@
 fastapi
-uvicorn[satndard]
+uvicorn[standard]
 websockets
-ultralytics==8.2.0
+
+--extra-index-url https://download.pytorch.org/whl/cu121
+torch
+torchvision
+
+ultralytics==8.3.230

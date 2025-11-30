@@ -55,6 +55,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.websocket("/ws_model")
 async def websocket_endpoint(websocket: WebSocket):
+    print("WebSocket connection established")
     await websocket.accept()
     infr = inferance()
     MAX_COUNT = 100
@@ -70,17 +71,17 @@ async def websocket_endpoint(websocket: WebSocket):
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             result = infr.predict(frame, MAX_COUNT=MAX_COUNT)
-            print("result : ", result, infr.result)
+            # print("result : ", result)
 
-            all_complete = all(count >= MAX_COUNT for count in infr.result.values())
+            all_complete = all(count >= MAX_COUNT for count in result.values())
 
             await websocket.send_json({
                 "status": "complete" if all_complete else "in_progress",
-                "counters": infr.result,
+                "counters": result,
                 "message": "All steps are followed. Passed!" if all_complete else "",
                 "max_count": MAX_COUNT
             })
-            print(f"Sent to client: {infr.result}")
+            # print(f"Sent to client: {result}")
             if all_complete: break
 
     except Exception as e:
@@ -94,7 +95,7 @@ async def root():
 
 
 ### prod 
-## uvicorn main:app --host 0.0.0.0 --port 4550 --workers 4
+## uvicorn backend.main:app --host 0.0.0.0 --port 4550 --workers 4
 
 ### dev
-## uvicorn main:app --host 0.0.0.0 --port 4550 --reload
+## uvicorn backend.main:app --host 0.0.0.0 --port 4550 --reload
