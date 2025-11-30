@@ -94,18 +94,22 @@ const WebcamCapture = forwardRef((props, ref) => {
   }, []);
 
   return (
-    <div>
-      <select onChange={(e) => setSelectedDevice(e.target.value)} value={selectedDevice}>
-        <option value="">Select a camera</option>
-        {devices.map(device => (
-          <option key={device.deviceId} value={device.deviceId}>
-            {device.label || `Camera ${device.deviceId}`}
-          </option>
-        ))}
-      </select>
-      {/* <button type="button" onClick={() => refreshDevices(true)}>Refresh cameras</button> */}
-      <video ref={videoRef} autoPlay playsInline />
-    </div>
+   <div className="camera-container">
+     <select 
+       className="camera-select"
+       onChange={(e) => setSelectedDevice(e.target.value)} 
+       value={selectedDevice}
+     >
+       <option value="">Select a camera</option>
+       {devices.map(device => (
+         <option key={device.deviceId} value={device.deviceId}>
+           {device.label || `Camera ${device.deviceId}`}
+         </option>
+       ))}
+     </select>
+     {/* <button type="button" onClick={() => refreshDevices(true)}>Refresh cameras</button> */}
+     <video ref={videoRef} autoPlay playsInline />
+   </div>
   );
 });
 
