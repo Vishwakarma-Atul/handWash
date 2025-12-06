@@ -1,81 +1,22 @@
 """
-YOLOv8 Training for Google Colab with async checkpoint saving to Google Drive
+YOLOv8 Training for Google Colab with concurrent backup to Google Drive
 """
 
 import os
 import shutil
 import threading
-from pathlib import Path
+import time
 from google.colab import drive
 from ultralytics import YOLO
 
-
-def create_gdrive_callback(gdrive_dir, save_interval=5):
-    """Create callback for async checkpoint saving to Google Drive"""
-    
-    def _save_async(src, dst, label):
-        """Copy file to Google Drive (async)"""
-        try:
-            shutil.copy2(src, dst)
-            print(f"✓ {label} → Google Drive")
-            os.remove(src)
-        except Exception as e:
-            print(f"✗ Save failed: {e}")
-    
-    def on_train_epoch_end(trainer):
-        """Save checkpoint every N epochs"""
-        if (trainer.epoch + 1) % save_interval == 0:
-            epoch = trainer.epoch + 1
-            src = trainer.last / 'weights' / 'last.pt'
-            
-            if src.exists():
-                temp = os.path.join(gdrive_dir, f'._tmp_epoch_{epoch:03d}.pt')
-                try:
-                    shutil.copy2(str(src), temp)
-                except Exception as e:
-                    print(f"✗ Temp copy failed: {e}")
-                    return
-                
-                dst = os.path.join(gdrive_dir, f'checkpoint_epoch_{epoch:03d}.pt')
-                thread = threading.Thread(
-                    target=_save_async,
-                    args=(temp, dst, f"Epoch {epoch}"),
-                    daemon=True
-                )
-                thread.start()
-    
-    return on_train_epoch_end
+# Global flag to stop backup thread
+STOP_BACKUP = False
 
 
-def main():
-    """Train YOLOv8 with Google Drive integration"""
-    
-    # Mount Google Drive
-    print("Mounting Google Drive...")
-    drive.mount('/content/drive')
-    
-    gdrive_dir = '/content/drive/MyDrive/handWash_models'
-    os.makedirs(gdrive_dir, exist_ok=True)
-    
-    # Copy dataset from Google Drive to Colab local space for faster training
-    print("Copying dataset to local Colab space...")
-    gdrive_dataset = '/content/drive/MyDrive/handWash/dataset'
-    dataset_path = '/content/dataset'
-    
-    if os.path.exists(gdrive_dataset):
-        if not os.path.exists(dataset_path):
-            shutil.copytree(gdrive_dataset, dataset_path)
-            print(f"✓ Dataset copied to {dataset_path}")
-        else:
-            print(f"✓ Dataset already exists at {dataset_path}")
-    else:
-        print(f"Dataset not found at {gdrive_dataset}")
-        return
-    
-    # Train
+def train_model(dataset_path, training_name='handWash_classifier'):
+    """Train YOLOv8 model locally"""
+    print("Starting YOLOv8 training...")
     model = YOLO('yolov8n-cls.pt')
-    callback = create_gdrive_callback(gdrive_dir, save_interval=5)
-    model.add_callback('on_train_epoch_end', callback)
     
     results = model.train(
         data=dataset_path,
@@ -95,23 +36,96 @@ def main():
         mixup=1.0,
         pretrained=True,
         device=0,
-        name='handWash_classifier'
+        name=training_name
     )
     
-    # Save final models
-    print("\nFinal save...")
-    timestamp = __import__('datetime').datetime.now().strftime("%Y%m%d_%H%M%S")
+    print("✓ Training completed!")
+    return results
+
+
+def backup_weights(training_name, gdrive_backup_dir, interval=120):
+    """Sync entire runs directory to Google Drive every 120 seconds"""
+    print(f"✓ Backup thread started (interval: {interval}s)")
     
-    best_src = results.save_dir / 'weights' / 'best.pt'
-    if best_src.exists():
-        shutil.copy2(best_src, os.path.join(gdrive_dir, f'best_final_{timestamp}.pt'))
-        print(f"✓ Best model saved")
+    while not STOP_BACKUP:
+        try:
+            time.sleep(interval)
+            
+            if not os.path.exists(training_name):
+                continue
+            
+            # Sync entire directory to Google Drive
+            try:
+                shutil.copytree(training_name, gdrive_backup_dir, dirs_exist_ok=True)
+                print(f"✓ Synced runs directory to Google Drive")
+            except Exception as e:
+                print(f"✗ Sync failed: {e}")
+        
+        except Exception as e:
+            print(f"✗ Backup thread error: {e}")
     
-    # List saved models
-    print(f"\nSaved models in {gdrive_dir}:")
-    for f in sorted(os.listdir(gdrive_dir)):
-        size = os.path.getsize(os.path.join(gdrive_dir, f)) / (1024*1024)
-        print(f"  {f:<45} {size:>6.2f} MB")
+    print("✓ Backup thread stopped")
+
+
+def main():
+    """Main: Run training and backup concurrently"""
+    global STOP_BACKUP
+
+    gdrive_backup_dir = '/content/drive/MyDrive/handWash/backups'
+    os.makedirs(gdrive_backup_dir, exist_ok=True)
+    
+    # Copy dataset
+    print("Copying dataset to local Colab space...")
+    gdrive_dataset = '/content/drive/MyDrive/handWash/dataset'
+    dataset_path = '/content/dataset'
+    training_name = '/content/classify/handWash_classifier'
+    
+    if os.path.exists(gdrive_dataset):
+        if not os.path.exists(dataset_path):
+            shutil.copytree(gdrive_dataset, dataset_path)
+            print(f"✓ Dataset copied")
+        else:
+            print(f"✓ Dataset already exists")
+    else:
+        print(f"Dataset not found at {gdrive_dataset}")
+        return
+    
+    # Start backup thread
+    backup_thread = threading.Thread(
+        target=backup_weights,
+        args=(training_name, gdrive_backup_dir, 120),
+        daemon=True
+    )
+    backup_thread.start()
+    
+    # Start training
+    try:
+        results = train_model(dataset_path, training_name)
+        
+        # Final upload
+        print("\nFinal upload to Google Drive...")
+        timestamp = __import__('datetime').datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        best_src = results.save_dir / 'weights' / 'best.pt'
+        last_src = results.save_dir / 'weights' / 'last.pt'
+        
+        if best_src.exists():
+            shutil.copy2(best_src, os.path.join(gdrive_backup_dir, f'best_{timestamp}.pt'))
+            print(f"✓ Best model saved")
+        
+        if last_src.exists():
+            shutil.copy2(last_src, os.path.join(gdrive_backup_dir, f'last_{timestamp}.pt'))
+            print(f"✓ Last model saved")
+    
+    finally:
+        STOP_BACKUP = True
+        backup_thread.join(timeout=5)
+    
+    # List backups
+    print(f"\nBackups in Google Drive:")
+    for f in sorted(os.listdir(gdrive_backup_dir), reverse=True):
+        size = os.path.getsize(os.path.join(gdrive_backup_dir, f)) / (1024*1024)
+        print(f"  {f:<50} {size:>6.2f}MB")
 
 
 if __name__ == "__main__":
