@@ -8,48 +8,43 @@ import threading
 from pathlib import Path
 from google.colab import drive
 from ultralytics import YOLO
-from ultralytics.utils.callbacks import Callbacks
 
 
-class GoogleDriveCallback(Callbacks):
-    """Async checkpoint saving to Google Drive"""
+def create_gdrive_callback(gdrive_dir, save_interval=5):
+    """Create callback for async checkpoint saving to Google Drive"""
     
-    def __init__(self, gdrive_dir, save_interval=5):
-        self.gdrive_dir = gdrive_dir
-        self.save_interval = save_interval
-    
-    def _save_async(self, src, dst, label):
+    def _save_async(src, dst, label):
         """Copy file to Google Drive (async)"""
         try:
             shutil.copy2(src, dst)
             print(f"✓ {label} → Google Drive")
-            os.remove(src)  # Clean up temp
+            os.remove(src)
         except Exception as e:
             print(f"✗ Save failed: {e}")
     
-    def on_train_epoch_end(self, trainer):
+    def on_train_epoch_end(trainer):
         """Save checkpoint every N epochs"""
-        if (trainer.epoch + 1) % self.save_interval == 0:
+        if (trainer.epoch + 1) % save_interval == 0:
             epoch = trainer.epoch + 1
             src = trainer.last / 'weights' / 'last.pt'
             
             if src.exists():
-                # Copy to temp (sync, fast)
-                temp = os.path.join(self.gdrive_dir, f'._tmp_epoch_{epoch:03d}.pt')
+                temp = os.path.join(gdrive_dir, f'._tmp_epoch_{epoch:03d}.pt')
                 try:
                     shutil.copy2(str(src), temp)
                 except Exception as e:
                     print(f"✗ Temp copy failed: {e}")
                     return
                 
-                # Upload async
-                dst = os.path.join(self.gdrive_dir, f'checkpoint_epoch_{epoch:03d}.pt')
+                dst = os.path.join(gdrive_dir, f'checkpoint_epoch_{epoch:03d}.pt')
                 thread = threading.Thread(
-                    target=self._save_async,
+                    target=_save_async,
                     args=(temp, dst, f"Epoch {epoch}"),
                     daemon=True
                 )
                 thread.start()
+    
+    return on_train_epoch_end
 
 
 def main():
@@ -62,15 +57,25 @@ def main():
     gdrive_dir = '/content/drive/MyDrive/handWash_models'
     os.makedirs(gdrive_dir, exist_ok=True)
     
-    # Load dataset
-    dataset_path = '/content/drive/MyDrive/handWash/dataset'
-    if not os.path.exists(dataset_path):
-        print(f"Dataset not found at {dataset_path}")
+    # Copy dataset from Google Drive to Colab local space for faster training
+    print("Copying dataset to local Colab space...")
+    gdrive_dataset = '/content/drive/MyDrive/handWash/dataset'
+    dataset_path = '/content/dataset'
+    
+    if os.path.exists(gdrive_dataset):
+        if not os.path.exists(dataset_path):
+            shutil.copytree(gdrive_dataset, dataset_path)
+            print(f"✓ Dataset copied to {dataset_path}")
+        else:
+            print(f"✓ Dataset already exists at {dataset_path}")
+    else:
+        print(f"Dataset not found at {gdrive_dataset}")
         return
     
     # Train
     model = YOLO('yolov8n-cls.pt')
-    callback = GoogleDriveCallback(gdrive_dir, save_interval=5)
+    callback = create_gdrive_callback(gdrive_dir, save_interval=5)
+    model.add_callback('on_train_epoch_end', callback)
     
     results = model.train(
         data=dataset_path,
@@ -90,8 +95,7 @@ def main():
         mixup=1.0,
         pretrained=True,
         device=0,
-        name='handWash_classifier',
-        callbacks=[callback]
+        name='handWash_classifier'
     )
     
     # Save final models
