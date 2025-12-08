@@ -15,6 +15,9 @@ services:
 
   backend:
     container_name: handwash-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: handwash_backend:latest
     ports:
       - "4550:4550"
