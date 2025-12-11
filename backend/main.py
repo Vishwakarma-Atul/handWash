@@ -6,6 +6,7 @@ import numpy as np
 import random, base64
 
 from .app import inferance
+from .utils import combine_frames
 
 app = FastAPI()
 
@@ -55,10 +56,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.websocket("/ws_model")
 async def websocket_endpoint(websocket: WebSocket):
-    print("WebSocket connection established")
     await websocket.accept()
     infr = inferance()
-    MAX_COUNT = 100
+    MAX_COUNT = 25
+    FRAME_STICH = 5
+    ## recieving 20 frames persecond, will create 4 stiched frames.
+    ## Approx 25//4 = 6.25 sec for each step.
+    frame_buffer = []
 
     try:
         while True:
@@ -69,20 +73,26 @@ async def websocket_endpoint(websocket: WebSocket):
             nparr = np.frombuffer(base64.b64decode(encoded), np.uint8)
             # Decode the image
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            frame_buffer.append(frame)
 
-            result = infr.predict(frame, MAX_COUNT=MAX_COUNT)
-            # print("result : ", result)
+            # Process only when buffer is full
+            if len(frame_buffer) >= FRAME_STICH:
+                combined = combine_frames(frame_buffer)
+                frame_buffer = []
+                result = infr.predict(combined, MAX_COUNT=MAX_COUNT)
+                # print("result : ", result)
 
-            all_complete = all(count >= MAX_COUNT for count in result.values())
+                if result:
+                    all_complete = all(count >= MAX_COUNT for _class, count in result.items() if _class!="background")
 
-            await websocket.send_json({
-                "status": "complete" if all_complete else "in_progress",
-                "counters": result,
-                "message": "All steps are followed. Passed!" if all_complete else "",
-                "max_count": MAX_COUNT
-            })
-            # print(f"Sent to client: {result}")
-            if all_complete: break
+                    await websocket.send_json({
+                        "status": "complete" if all_complete else "in_progress",
+                        "counters": result,
+                        "message": "All steps are followed. Passed!" if all_complete else "",
+                        "max_count": MAX_COUNT
+                    })
+                    # print(f"Sent to client: {result}")
+                    if all_complete: break
 
     except Exception as e:
         print(f"Error: {e}")

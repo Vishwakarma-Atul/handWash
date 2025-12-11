@@ -4,12 +4,14 @@ import './ProgressSlider.css';
 function ProgressSlider({ name, value }) {
   return (
     <div className="progress-slider">
-      <label>{name}</label>
       <div className="slider-container">
-        <div className="slider-track">
-          <div className="slider-fill" style={{ width: `${value}%` }}></div>
+        <div 
+          className="slider-track"
+          style={{ background: `linear-gradient(90deg, #4CAF50 0%, #4CAF50 ${value}%, #444 ${value}%, #444 100%)` }}
+        >
+          <span className="slider-label">{name}</span>
+          <span className="slider-percentage">{value}%</span>
         </div>
-        <span className="slider-value">{value}%</span>
       </div>
     </div>
   );

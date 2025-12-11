@@ -44,25 +44,35 @@ const WebcamCapture = forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     startSendingFrames: (ws) => {
       if (selectedDevice && videoRef.current.srcObject) {
-        const imageCapture = new ImageCapture(videoRef.current.srcObject.getVideoTracks()[0]);
+        const videoTrack = videoRef.current.srcObject.getVideoTracks()[0];
+        if (!videoTrack) {
+          console.error('No video track available');
+          return;
+        }
+        
+        const imageCapture = new ImageCapture(videoTrack);
         streamInterval.current = setInterval(async () => {
-          const frame = await imageCapture.grabFrame();
-          const canvas = document.createElement('canvas');
-          canvas.width = frame.width;
-          canvas.height = frame.height;
-          const ctx = canvas.getContext('2d');
-          
-          // Rotate the frame by 180 degrees
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.rotate(Math.PI);
-          ctx.translate(-canvas.width / 2, -canvas.height / 2);
-          
-          ctx.drawImage(frame, 0, 0);
-          const imageData = canvas.toDataURL('image/jpeg');
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(imageData);
+          try {
+            const frame = await imageCapture.grabFrame();
+            const canvas = document.createElement('canvas');
+            canvas.width = frame.width;
+            canvas.height = frame.height;
+            const ctx = canvas.getContext('2d');
+            
+            // // Rotate the frame by 180 degrees
+            // ctx.translate(canvas.width / 2, canvas.height / 2);
+            // ctx.rotate(Math.PI);
+            // ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            
+            ctx.drawImage(frame, 0, 0);
+            const imageData = canvas.toDataURL('image/jpeg');
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(imageData);
+            }
+          } catch (error) {
+            console.error('Error capturing frame:', error);
           }
-        }, 500); // Send frame every 500ms (2 fps)
+        }, 50); // Send frame every 100ms (10 fps) - matches training: 5 frames combined at 2 predictions/sec
       }
     }
   }));
@@ -94,18 +104,22 @@ const WebcamCapture = forwardRef((props, ref) => {
   }, []);
 
   return (
-    <div>
-      <select onChange={(e) => setSelectedDevice(e.target.value)} value={selectedDevice}>
-        <option value="">Select a camera</option>
-        {devices.map(device => (
-          <option key={device.deviceId} value={device.deviceId}>
-            {device.label || `Camera ${device.deviceId}`}
-          </option>
-        ))}
-      </select>
-      {/* <button type="button" onClick={() => refreshDevices(true)}>Refresh cameras</button> */}
-      <video ref={videoRef} autoPlay playsInline />
-    </div>
+   <div className="camera-container">
+     <select 
+       className="camera-select"
+       onChange={(e) => setSelectedDevice(e.target.value)} 
+       value={selectedDevice}
+     >
+       <option value="">Select a camera</option>
+       {devices.map(device => (
+         <option key={device.deviceId} value={device.deviceId}>
+           {device.label || `Camera ${device.deviceId}`}
+         </option>
+       ))}
+     </select>
+     {/* <button type="button" onClick={() => refreshDevices(true)}>Refresh cameras</button> */}
+     <video ref={videoRef} autoPlay playsInline />
+   </div>
   );
 });
 

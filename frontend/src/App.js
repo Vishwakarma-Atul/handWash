@@ -67,14 +67,17 @@ function App() {
   return (
     <div className="App">
       <h1>Project Hand Wash</h1>
-      <p>Status: {status}</p>
-      <div className="button-group">
-        <button onClick={handleStart}>Start</button>
-        <button onClick={handleReset}>Reset</button>
-      </div>
-      <div><br></br><br></br></div>
       <div className="content-wrapper">
         <div className="camera-section">
+          <div className="camera-controls">
+            <div className="status-info">
+              <p>Status: <span className="status-value">{status}</span></p>
+            </div>
+            <div className="button-group">
+              <button onClick={handleStart}>Start</button>
+              <button onClick={handleReset}>Reset</button>
+            </div>
+          </div>
           <WebcamCapture ref={webcamRef} />
         </div>
         <div className="sliders-section">
