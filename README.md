@@ -1,6 +1,6 @@
 # handWash - Hand Washing Detection and Validation System
 
-An AI-powered system that detects and validates hand washing steps using computer vision and deep learning. The system uses YOLOv11 for classification to track hand washing stages and ensure proper hand hygiene compliance.
+An AI-powered system that detects hand washing steps recomended by WHO, using computer vision and deep learning. The system uses classification technique to identify hand washing stages and ensure proper hand hygiene compliance.
 
 ## Demo
 
@@ -9,8 +9,8 @@ An AI-powered system that detects and validates hand washing steps using compute
 ## Project Overview
 
 HandWash is a full-stack application that:
-- Detects hand washing actions in real-time using video streams
-- Classifies hand washing steps (Step 1-5)
+- Detects camera ad generate real-time video streams
+- Real time classifies hand washing steps
 - Validates completion of all hand washing steps
 - Provides real-time feedback via WebSocket connections
 - Combines multiple frames for improved classification accuracy
@@ -55,7 +55,6 @@ handWash/
 
 - Python 3.8+
 - Node.js 14+
-- GPU with CUDA support (recommended)
 - Docker and Docker Compose (optional)
 
 ### Installation
