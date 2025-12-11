@@ -1,5 +1,4 @@
 from ultralytics import YOLO
-import numpy as np
 
 class Classifier:
     def __init__(self, model, model_path=None):
