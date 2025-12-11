@@ -58,8 +58,10 @@ async def websocket_endpoint(websocket: WebSocket):
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     infr = inferance()
-    MAX_COUNT = 100
+    MAX_COUNT = 25
     FRAME_STICH = 5
+    ## recieving 20 frames persecond, will create 4 stiched frames.
+    ## Approx 25//4 = 6.25 sec for each step.
     frame_buffer = []
 
     try:

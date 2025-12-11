@@ -1,47 +1,12 @@
 import cv2
 import os
-import numpy as np
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
-
-def combine_frames_mean(frames):
-    """
-    Merges multiple frames at pixel level using simple mean.
-    """
-    if not frames:
-        return None
-    
-    stacked = np.array(frames, dtype=np.float32)
-    return np.mean(stacked, axis=0).astype(np.uint8)
-
-def combine_frames_weighted(frames, alpha=0.1):
-    """
-    Exponential Moving Average (EMA) across frames.
-    F'_n = alpha*F_n + (1-alpha)*F'_{n-1}
-    Latest frame gets more weight with exponential decay to older frames.
-    """
-    if not frames:
-        return None
-    
-    n_frames = len(frames)
-    
-    # Calculate exponential weights: [alpha*(1-alpha)^4, ..., alpha*(1-alpha), alpha]
-    weights = np.array([alpha * ((1 - alpha) ** (n_frames - 1 - i)) for i in range(n_frames)], dtype=np.float32)
-    # Normalize so weights sum to 1
-    weights = weights / np.sum(weights)
-    
-    # Weighted average
-    stacked = np.array(frames, dtype=np.float32)
-    weights = weights.reshape(n_frames, 1, 1, 1)
-    return np.sum(stacked * weights, axis=0).astype(np.uint8)
-
-def combine_frames(frames):
-    """
-    Wrapper function to choose between averaging methods.
-    """
-    # return combine_frames_mean(frames)
-    return combine_frames_weighted(frames)  # Uncomment to use weighted average
+# Import frame combining utilities from backend
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend'))
+from utils.frame_combiner import combine_frames
 
 def video_to_images(args):
     """
@@ -74,7 +39,7 @@ def video_to_images(args):
                 
                 if len(frame_buffer) == COMB_FRAMES:
                     combined = combine_frames(frame_buffer)
-                    frame_path = os.path.join(output_dir, f"{os.path.basename(video_path).split('.')[0]}_{count:04d}.jpg")
+                    frame_path = os.path.join(output_dir, f"{os.path.basename(video_path).split('.')[0]}_{FPS}_{count:04d}.jpg")
                     cv2.imwrite(frame_path, combined)
                     
                     # Randomly assign to validation set
@@ -90,7 +55,7 @@ def video_to_images(args):
         else:
             # Original mode: save individual frames
             if frame_num % frame_interval == 0:
-                frame_path = os.path.join(output_dir, f"{os.path.basename(video_path).split('.')[0]}_{count:04d}.jpg")
+                frame_path = os.path.join(output_dir, f"{os.path.basename(video_path).split('.')[0]}_{FPS}_{count:04d}.jpg")
                 cv2.imwrite(frame_path, image)
 
                 # Randomly assign to validation set

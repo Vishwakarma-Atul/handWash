@@ -59,10 +59,10 @@ const WebcamCapture = forwardRef((props, ref) => {
             canvas.height = frame.height;
             const ctx = canvas.getContext('2d');
             
-            // Rotate the frame by 180 degrees
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(Math.PI);
-            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            // // Rotate the frame by 180 degrees
+            // ctx.translate(canvas.width / 2, canvas.height / 2);
+            // ctx.rotate(Math.PI);
+            // ctx.translate(-canvas.width / 2, -canvas.height / 2);
             
             ctx.drawImage(frame, 0, 0);
             const imageData = canvas.toDataURL('image/jpeg');
@@ -72,7 +72,7 @@ const WebcamCapture = forwardRef((props, ref) => {
           } catch (error) {
             console.error('Error capturing frame:', error);
           }
-        }, 100); // Send frame every 100ms (10 fps) - matches training: 5 frames combined at 2 predictions/sec
+        }, 50); // Send frame every 100ms (10 fps) - matches training: 5 frames combined at 2 predictions/sec
       }
     }
   }));
