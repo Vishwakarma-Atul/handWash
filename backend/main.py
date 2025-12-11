@@ -83,7 +83,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # print("result : ", result)
 
                 if result:
-                    all_complete = all(count >= MAX_COUNT for count in result.values())
+                    all_complete = all(count >= MAX_COUNT for _class, count in result.items() if _class!="background")
 
                     await websocket.send_json({
                         "status": "complete" if all_complete else "in_progress",
