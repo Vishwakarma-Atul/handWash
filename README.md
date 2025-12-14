@@ -1,6 +1,6 @@
-# handWash - Hand Washing Detection and Validation System
+# Hand Washing Steps (WHO) Detection
 
-An AI-powered system that detects and validates hand washing steps using computer vision and deep learning. The system uses YOLOv11 for classification to track hand washing stages and ensure proper hand hygiene compliance.
+An AI-powered system that detects hand washing steps recomended by WHO, using computer vision and deep learning. The system uses classification technique to identify hand washing stages and ensure proper hand hygiene compliance.
 
 ## Demo
 
@@ -9,11 +9,10 @@ An AI-powered system that detects and validates hand washing steps using compute
 ## Project Overview
 
 HandWash is a full-stack application that:
-- Detects hand washing actions in real-time using video streams
-- Classifies hand washing steps (Step 1-5)
-- Validates completion of all hand washing steps
-- Provides real-time feedback via WebSocket connections
+- Detects camera and generate real-time frames from video stream
 - Combines multiple frames for improved classification accuracy
+- CNN model classifies hand washing steps as per WHO in rea-time
+- Provides real-time feedback to user on UI via WebSocket connections
 
 ## Architecture
 
@@ -34,7 +33,6 @@ handWash/
 
 ### Backend (FastAPI)
 - **Real-time inference**: WebSocket endpoint for live hand washing detection
-- **Frame optimization**: Combines multiple frames to improve classification accuracy
 - **Step tracking**: Counts occurrences of each hand washing step
 
 ### Frontend (React)
@@ -47,15 +45,14 @@ handWash/
 - **Framework**: YOLOv11 (Ultralytics)
 - **Task**: Image classification of hand washing steps
 - **Input**: Combined frames from video stream
-- **Output**: Classification probabilities for each step + background
+- **Output**: Classification probabilities for each step + background/noise
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - Node.js 14+
-- GPU with CUDA support (recommended)
 - Docker and Docker Compose (optional)
 
 ### Installation
@@ -63,7 +60,7 @@ handWash/
 #### Backend Setup
 
 1. Create python virtual environment.
-2. Install Python dependencies.
+2. Install Python dependencies. Make sure to install compatible cuda version for your GPU.
    ```bash
    python3 -m venv /env/path/name
    source /env/path/name/bin/activate
@@ -161,14 +158,6 @@ Configured in `backend/utils/frame_combiner.py`
 ### Frontend
 - **React**: UI framework
 - **Node.js**: Runtime
-
-
-## Performance
-
-- **Frame Processing**: ~5 frames combined per inference (20 fps input = 4 inferences/sec)
-- **Inference Time**: ~6.25 seconds per step completion
-- **Confidence Threshold**: 0.75 minimum for classification
-
 
 ## Contact
 
